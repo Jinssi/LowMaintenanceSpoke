@@ -1,0 +1,45 @@
+flowchart LR
+  subgraph signals["Alert rules (IaC)"]
+    direction TB
+    platform@{ icon: "azure:monitor", form: "square", label: "Platform metrics<br/>ACA env, Key Vault, Foundry,<br/>App Gateway, Firewall", pos: "b", h: 44 }
+    logs@{ icon: "azure:log-analytics-workspaces", form: "square", label: "Log alerts<br/>crash loops, exceptions", pos: "b", h: 44 }
+    perapp@{ icon: "azure:worker-container-app", form: "square", label: "Per-app alerts<br/>5xx, CPU, memory", pos: "b", h: 44 }
+    health@{ icon: "azure:service-health", form: "square", label: "Resource + Service Health", pos: "b", h: 44 }
+  end
+
+  ticket@{ icon: "azure:alerts", form: "square", label: "Azure Monitor alert = ticket<br/>New → Acknowledged → Closed<br/>notes = state-change comments", pos: "b", h: 56 }
+  oncall@{ icon: "azure:users", form: "square", label: "On-call humans<br/>e-mail Sev0-1, approvals", pos: "b", h: 48 }
+
+  subgraph l1["SRE agent L1 - triage (Reader)"]
+    direction TB
+    l1plan["Response plan l1-sev2-to-sev4<br/>Sev2 · Sev3 · Sev4 · autonomous"]
+    l1triage@{ icon: "azure:bot-services", form: "square", label: "l1-triage<br/>may only change alert state", pos: "b", h: 44 }
+    l1rep@{ icon: "azure:bot-services", form: "square", label: "l1-reporter<br/>daily digest · weekly noise review", pos: "b", h: 44 }
+    l1plan --> l1triage
+  end
+
+  subgraph l2["SRE agent L2 - responder (Container Apps Contributor)"]
+    direction TB
+    l2plan["Response plan l2-sev0-to-sev1<br/>Sev0 · Sev1 · review mode"]
+    sweep["Escalation sweep<br/>every 30 min"]
+    cmdr@{ icon: "azure:bot-services", form: "square", label: "l2-incident-commander", pos: "b", h: 44 }
+    rem@{ icon: "azure:bot-services", form: "square", label: "l2-aca-remediator<br/>restart · rollback · scale", pos: "b", h: 44 }
+    net@{ icon: "azure:bot-services", form: "square", label: "l2-network-diagnostician<br/>read-only", pos: "b", h: 44 }
+    l2plan --> cmdr
+    sweep --> cmdr
+    cmdr --> rem & net
+  end
+
+  platform & logs & perapp & health --> ticket
+  ticket -- "Sev2-4" --> l1plan
+  ticket -- "Sev0-1" --> l2plan
+  ticket -- "Sev0-1 action group" --> oncall
+  l1triage -- "[L1-CLOSE] / [L1-TRIAGE]" --> ticket
+  l1triage -. "[ESCALATE-L2] note" .-> sweep
+  cmdr -- "[L2-ACCEPT] … [L2-RESOLVED]" --> ticket
+  rem -. "approve each change" .-> oncall
+
+  classDef grp fill:#f3f8fd,stroke:#0078d4,stroke-dasharray:4 3
+  classDef step fill:#ffffff,stroke:#0078d4
+  class signals,l1,l2 grp
+  class l1plan,l2plan,sweep step

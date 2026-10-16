@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+# Platform only. Apps are deployed independently with scripts/deploy-app.ps1.
+name: lowmaint-aca-spoke
+metadata:
+  template: lowmaint-aca-spoke
+infra:
+  provider: bicep
+  path: infra
+  module: main
+hooks:
+  # Applies the SRE agents' data-plane configuration (skills, custom agents, response plans,
+  # scheduled tasks, knowledge). Idempotent; skipped when DEPLOY_SRE_AGENTS=false.
+  postprovision:
+    shell: pwsh
+    run: ./scripts/configure-sre-agents.ps1
+    interactive: false
+    continueOnError: true

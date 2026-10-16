@@ -1,0 +1,14 @@
+{
+  "analyzers": {
+    "core": {
+      "enabled": true,
+      "rules": {
+        "no-unused-params": { "level": "error" },
+        "no-unused-vars": { "level": "error" },
+        "secure-secrets-in-params": { "level": "error" },
+        "use-recent-api-versions": { "level": "warning" },
+        "use-recent-module-versions": { "level": "warning" }
+      }
+    }
+  }
+}

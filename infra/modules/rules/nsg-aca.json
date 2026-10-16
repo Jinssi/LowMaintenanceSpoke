@@ -1,0 +1,89 @@
+{
+  "$comment": "Ported from Azure/ACA-Landing-Zone-Accelerator. Outbound rules required by Container Apps (https://learn.microsoft.com/azure/container-apps/firewall-integration). '<location>' is replaced at deploy time. Default inbound rules are sufficient.",
+  "securityRules": [
+    {
+      "name": "Allow_Internal_AKS_Connection_UDP",
+      "properties": {
+        "description": "Secure connection between underlying nodes and control plane.",
+        "protocol": "Udp",
+        "sourceAddressPrefix": "VirtualNetwork",
+        "sourcePortRange": "*",
+        "destinationAddressPrefix": "AzureCloud.<location>",
+        "destinationPortRange": "1194",
+        "access": "Allow",
+        "priority": 100,
+        "direction": "Outbound"
+      }
+    },
+    {
+      "name": "Allow_Internal_AKS_Connection_TCP",
+      "properties": {
+        "description": "Secure connection between underlying nodes and control plane.",
+        "protocol": "Tcp",
+        "sourceAddressPrefix": "VirtualNetwork",
+        "sourcePortRange": "*",
+        "destinationAddressPrefix": "AzureCloud.<location>",
+        "destinationPortRange": "9000",
+        "access": "Allow",
+        "priority": 110,
+        "direction": "Outbound"
+      }
+    },
+    {
+      "name": "Allow_Azure_Monitor",
+      "properties": {
+        "description": "Outbound calls to Azure Monitor.",
+        "protocol": "Tcp",
+        "sourceAddressPrefix": "VirtualNetwork",
+        "sourcePortRange": "*",
+        "destinationAddressPrefix": "AzureCloud.<location>",
+        "destinationPortRange": "443",
+        "access": "Allow",
+        "priority": 120,
+        "direction": "Outbound"
+      }
+    },
+    {
+      "name": "Allow_Outbound_443",
+      "properties": {
+        "description": "FQDN-based dependencies without static IPs. Filtering is done by the hub firewall.",
+        "protocol": "Tcp",
+        "sourceAddressPrefix": "VirtualNetwork",
+        "sourcePortRange": "*",
+        "destinationAddressPrefix": "*",
+        "destinationPortRange": "443",
+        "access": "Allow",
+        "priority": 130,
+        "direction": "Outbound"
+      }
+    },
+    {
+      "name": "Allow_NTP",
+      "properties": {
+        "description": "NTP server.",
+        "protocol": "Udp",
+        "sourceAddressPrefix": "VirtualNetwork",
+        "sourcePortRange": "*",
+        "destinationAddressPrefix": "*",
+        "destinationPortRange": "123",
+        "access": "Allow",
+        "priority": 140,
+        "direction": "Outbound"
+      }
+    },
+    {
+      "name": "Allow_Container_Apps_Control_Plane",
+      "properties": {
+        "description": "Container Apps control plane.",
+        "protocol": "Tcp",
+        "sourceAddressPrefix": "VirtualNetwork",
+        "sourcePortRange": "*",
+        "destinationAddressPrefix": "*",
+        "destinationPortRanges": [ "5671", "5672" ],
+        "access": "Allow",
+        "priority": 150,
+        "direction": "Outbound"
+      }
+    }
+  ]
+}

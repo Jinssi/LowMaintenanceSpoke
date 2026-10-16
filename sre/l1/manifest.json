@@ -1,0 +1,84 @@
+{
+  "$comment": "L1 Triage agent: Reader access, owns Sev2-Sev4. Applied by scripts/configure-sre-agents.ps1. {{TOKENS}} are replaced from the azd environment.",
+  "knowledge": [
+    { "name": "operating-model", "file": "../shared/operating-model.md" },
+    { "name": "platform-context", "file": "../shared/platform-context.md" }
+  ],
+  "skills": [
+    {
+      "name": "triage-azure-monitor-alert",
+      "description": "Triage a Sev2-Sev4 Azure Monitor alert in the spoke and decide close, keep, escalate to L2 or hand to humans.",
+      "tools": ["RunAzCliReadCommands", "RunAzCliWriteCommands", "QueryAppInsightsUsingAppId", "QueryLogAnalyticsByWorkspaceId", "SearchMemory"],
+      "file": "skills/triage-azure-monitor-alert.md"
+    },
+    {
+      "name": "container-app-health-check",
+      "description": "Read-only health check of one container app: revisions, platform events, logs, requests, dependencies and metrics.",
+      "tools": ["RunAzCliReadCommands", "QueryAppInsightsUsingAppId", "QueryLogAnalyticsByWorkspaceId"],
+      "file": "skills/container-app-health-check.md"
+    },
+    {
+      "name": "known-noise-and-thresholds",
+      "description": "Guidance to tell alert noise from real problems and where alert thresholds live in IaC.",
+      "tools": ["SearchMemory"],
+      "file": "skills/known-noise-and-thresholds.md"
+    },
+    {
+      "name": "daily-health-digest",
+      "description": "Produce the read-only 24h health digest for the spoke: tickets, apps, platform, changes.",
+      "tools": ["RunAzCliReadCommands", "QueryAppInsightsUsingAppId", "QueryLogAnalyticsByWorkspaceId"],
+      "file": "skills/daily-health-digest.md"
+    },
+    {
+      "name": "alert-noise-review",
+      "description": "Weekly review of alert rules: noisy rules, missing coverage and concrete IaC threshold proposals.",
+      "tools": ["RunAzCliReadCommands", "QueryLogAnalyticsByWorkspaceId", "SearchMemory"],
+      "file": "skills/alert-noise-review.md"
+    }
+  ],
+  "agents": [
+    {
+      "name": "l1-triage",
+      "file": "agents/l1-triage.md",
+      "handoffDescription": "L1 triage for Sev2-Sev4 Azure Monitor alerts in the spoke. Read-only; can only change alert state with tagged notes.",
+      "tools": ["RunAzCliReadCommands", "RunAzCliWriteCommands", "QueryAppInsightsUsingAppId", "QueryLogAnalyticsByWorkspaceId", "SearchMemory"],
+      "allowedSkills": ["triage-azure-monitor-alert", "container-app-health-check", "known-noise-and-thresholds"],
+      "guardPolicy": "l1-triage"
+    },
+    {
+      "name": "l1-reporter",
+      "file": "agents/l1-reporter.md",
+      "handoffDescription": "Read-only scheduled reporting: daily health digest and weekly alert noise review.",
+      "tools": ["RunAzCliReadCommands", "QueryAppInsightsUsingAppId", "QueryLogAnalyticsByWorkspaceId", "SearchMemory"],
+      "allowedSkills": ["daily-health-digest", "alert-noise-review", "known-noise-and-thresholds"],
+      "guardPolicy": "read-only"
+    }
+  ],
+  "responsePlans": [
+    {
+      "name": "l1-sev2-to-sev4",
+      "priorities": ["Sev2", "Sev3", "Sev4"],
+      "handlingAgent": "l1-triage",
+      "agentMode": "autonomous",
+      "maxAutomatedInvestigationAttempts": 2
+    }
+  ],
+  "scheduledTasks": [
+    {
+      "name": "daily-health-digest",
+      "description": "Weekday 07:00 UTC health digest for the spoke.",
+      "cron": "0 7 * * 1-5",
+      "agent": "l1-reporter",
+      "mode": "Autonomous",
+      "prompt": "Run the daily-health-digest skill for the last 24 hours and post the digest."
+    },
+    {
+      "name": "weekly-alert-noise-review",
+      "description": "Monday 08:00 UTC alert noise review with IaC threshold proposals.",
+      "cron": "0 8 * * 1",
+      "agent": "l1-reporter",
+      "mode": "Autonomous",
+      "prompt": "Run the alert-noise-review skill for the last 7 days and post the table of proposals."
+    }
+  ]
+}

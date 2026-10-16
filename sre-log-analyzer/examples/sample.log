@@ -1,0 +1,4 @@
+{"timestamp":"2026-10-02T07:00:00Z","level":"INFO","message":"POST /orders completed","statusCode":200,"party":"partner-a","correlationId":"req-01"}
+{"timestamp":"2026-10-02T07:15:00Z","level":"ERROR","message":"POST /orders status=404 OperationNotFound order 123","statusCode":404,"party":"partner-a","correlationId":"req-02"}
+{"timestamp":"2026-10-02T07:16:00Z","level":"ERROR","message":"POST /orders status=404 OperationNotFound order 456","statusCode":404,"party":"partner-a","correlationId":"req-03"}
+2026-10-02T07:20:00Z INFO POST /orders status=200 party=partner-b correlation_id=req-04

@@ -1,0 +1,38 @@
+flowchart LR
+  client@{ icon: "azure:users", form: "square", label: "Client", pos: "b", h: 56 }
+
+  subgraph hub["Hub VNet"]
+    fw@{ icon: "azure:firewalls", form: "square", label: "Azure Firewall", pos: "b", h: 56 }
+    resolver@{ icon: "azure:dns-private-resolver", form: "square", label: "DNS resolver<br/>platform hub", pos: "b", h: 56 }
+  end
+
+  subgraph spoke["Spoke VNet 10.1.0.0/22"]
+    agw@{ icon: "azure:application-gateways", form: "square", label: "App Gateway WAF_v2<br/>*.apps domain", pos: "b", h: 56 }
+    subgraph aca["Container Apps environment - internal"]
+      app@{ icon: "azure:worker-container-app", form: "square", label: "orders.apps domain", pos: "b", h: 56 }
+    end
+    pe@{ icon: "azure:private-endpoints", form: "square", label: "Private endpoints", pos: "b", h: 56 }
+  end
+
+  dns@{ icon: "azure:dns-zones", form: "square", label: "Private DNS zones<br/>apps domain + privatelink.*", pos: "b", h: 56 }
+  mi@{ icon: "azure:managed-identities", form: "square", label: "Apps identity", pos: "b", h: 56 }
+
+  subgraph paas["PaaS - no public access"]
+    aif@{ icon: "azure:ai-foundry", form: "square", label: "AI Foundry project", pos: "b", h: 56 }
+    kv@{ icon: "azure:key-vaults", form: "square", label: "Key Vault", pos: "b", h: 56 }
+    acr@{ icon: "azure:container-registries", form: "square", label: "Container Registry", pos: "b", h: 56 }
+  end
+
+  internet@{ icon: "azure:globe-success", form: "square", label: "Allowed FQDNs", pos: "b", h: 56 }
+
+  client -- "1 · HTTPS orders.apps domain" --> agw
+  agw -- "2 · wildcard listener, Host kept" --> app
+  app -- "3 · token via identity" --> mi
+  app -- "4 · Foundry / Key Vault / image pull" --> pe
+  pe -- "5 · Private Link" --> aif & kv & acr
+  app -. "6 · 0.0.0.0/0 UDR" .-> fw
+  fw -. "7 · allow-listed egress" .-> internet
+  resolver -. "8 · resolves via linked zones" .-> dns
+
+  classDef flowGroup fill:#f3f8fd,stroke:#0078d4,stroke-dasharray:4 3
+  class hub,spoke,aca,paas flowGroup

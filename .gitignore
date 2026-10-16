@@ -1,0 +1,38 @@
+# azd
+.azure/
+.sre-preview/
+
+# local environment, registry credentials and deployment overrides
+.env
+.env.*
+!.env.example
+!.env.*.example
+.npmrc
+!.npmrc.example
+*.local.bicepparam
+*.local.json
+
+# node
+node_modules/
+
+# bicep build output
+infra/**/*.json
+!infra/modules/rules/*.json
+apps/**/*.json
+
+# local certs
+*.pfx
+*.cer
+*.p12
+*.pem
+*.key
+*.jks
+*.keystore
+
+# Python and local logs
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.log
+!sre-log-analyzer/examples/sample.log

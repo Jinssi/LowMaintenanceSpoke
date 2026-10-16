@@ -1,0 +1,60 @@
+flowchart LR
+  users@{ icon: "azure:users", form: "square", label: "Clients", pos: "b", h: 48 }
+
+  subgraph hub["Hub VNet 10.0.0.0/24 - platform hub or optional test hub"]
+    direction TB
+    fw@{ icon: "azure:firewalls", form: "square", label: "Azure Firewall", pos: "b", h: 48 }
+    bastion@{ icon: "azure:bastions", form: "square", label: "Bastion", pos: "b", h: 48 }
+    jump@{ icon: "azure:virtual-machine", form: "square", label: "Jumpbox (optional)", pos: "b", h: 48 }
+  end
+
+  subgraph spoke["Spoke VNet 10.1.0.0/22"]
+    direction LR
+    subgraph snetagw["snet-agw 10.1.3.0/24"]
+      agw@{ icon: "azure:application-gateways", form: "square", label: "App Gateway WAF_v2", pos: "b", h: 48 }
+    end
+    subgraph snetaca["snet-aca 10.1.0.0/23 - delegated - UDR to hub"]
+      direction TB
+      cae@{ icon: "azure:container-apps-environments", form: "square", label: "Container Apps env (internal)", pos: "b", h: 48 }
+      apps@{ icon: "azure:worker-container-app", form: "square", label: "app-a ... app-n", pos: "b", h: 48 }
+    end
+    subgraph snetpep["snet-pep 10.1.2.0/26"]
+      pe@{ icon: "azure:private-endpoints", form: "square", label: "Private endpoints", pos: "b", h: 48 }
+    end
+    subgraph snetsre["snet-sre-l1 / l2 10.1.2.64/26 - delegated - UDR to hub"]
+      srenet@{ icon: "azure:subnet", form: "square", label: "SRE agents L1/L2<br/>VNet egress", pos: "b", h: 48 }
+    end
+  end
+
+  subgraph paas["PaaS - public network access disabled"]
+    direction TB
+    acr@{ icon: "azure:container-registries", form: "square", label: "Container Registry", pos: "b", h: 48 }
+    kv@{ icon: "azure:key-vaults", form: "square", label: "Key Vault", pos: "b", h: 48 }
+    aif@{ icon: "azure:ai-foundry", form: "square", label: "AI Foundry + project", pos: "b", h: 48 }
+  end
+
+  subgraph shared["Shared services"]
+    direction TB
+    dns@{ icon: "azure:dns-zones", form: "square", label: "Private DNS zones", pos: "b", h: 48 }
+    mi@{ icon: "azure:managed-identities", form: "square", label: "Apps identity", pos: "b", h: 48 }
+    law@{ icon: "azure:log-analytics-workspaces", form: "square", label: "Log Analytics + App Insights", pos: "b", h: 48 }
+  end
+
+  subgraph ops["Operations (rg-sre)"]
+    direction TB
+    alerts@{ icon: "azure:alerts", form: "square", label: "Azure Monitor alerts = tickets", pos: "b", h: 48 }
+    l1@{ icon: "azure:bot-services", form: "square", label: "SRE agent L1 triage<br/>Reader - Sev2-4", pos: "b", h: 48 }
+    l2@{ icon: "azure:bot-services", form: "square", label: "SRE agent L2 responder<br/>approvals - Sev0-1", pos: "b", h: 48 }
+  end
+
+  users --> agw --> cae --> apps
+  apps --> pe --> acr & kv & aif
+  apps -. egress .-> fw
+  srenet -. egress .-> fw
+  apps -. telemetry .-> law
+  law --> alerts
+  alerts --> l1 & l2
+  l1 -. "[ESCALATE-L2]" .-> l2
+
+  classDef grp fill:#f3f8fd,stroke:#0078d4,stroke-dasharray:4 3
+  class hub,spoke,snetagw,snetaca,snetpep,snetsre,paas,shared,ops grp

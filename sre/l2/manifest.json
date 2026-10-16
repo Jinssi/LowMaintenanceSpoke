@@ -1,0 +1,99 @@
+{
+  "$comment": "L2 Responder agent: Container Apps Contributor on the spoke, owns Sev0-Sev1 and L1 escalations. Applied by scripts/configure-sre-agents.ps1.",
+  "knowledge": [
+    { "name": "operating-model", "file": "../shared/operating-model.md" },
+    { "name": "platform-context", "file": "../shared/platform-context.md" }
+  ],
+  "skills": [
+    {
+      "name": "incident-command",
+      "description": "Own a Sev0/Sev1 or escalated ticket: accept, size impact, route to a specialist, mitigate, verify, close.",
+      "tools": ["RunAzCliReadCommands", "RunAzCliWriteCommands", "QueryAppInsightsUsingAppId", "QueryLogAnalyticsByWorkspaceId", "SearchMemory"],
+      "file": "skills/incident-command.md"
+    },
+    {
+      "name": "escalation-sweep",
+      "description": "Find Azure Monitor tickets that L1 escalated with [ESCALATE-L2] and are not yet accepted by L2.",
+      "tools": ["RunAzCliReadCommands", "RunAzCliWriteCommands", "SearchMemory"],
+      "file": "skills/escalation-sweep.md"
+    },
+    {
+      "name": "container-app-health-check",
+      "description": "Read-only health check of one container app: revisions, platform events, logs, requests, dependencies and metrics.",
+      "tools": ["RunAzCliReadCommands", "QueryAppInsightsUsingAppId", "QueryLogAnalyticsByWorkspaceId"],
+      "file": "../l1/skills/container-app-health-check.md"
+    },
+    {
+      "name": "container-app-remediation",
+      "description": "Approved Container Apps mitigations: revision restart, traffic rollback, bounded scale and resize, with drift notes.",
+      "tools": ["RunAzCliReadCommands", "RunAzCliWriteCommands"],
+      "file": "skills/container-app-remediation.md"
+    },
+    {
+      "name": "spoke-network-diagnostics",
+      "description": "Read-only diagnosis of private endpoints, private DNS, routing, hub firewall, App Gateway and the ACA environment.",
+      "tools": ["RunAzCliReadCommands", "QueryLogAnalyticsByWorkspaceId"],
+      "file": "skills/spoke-network-diagnostics.md"
+    },
+    {
+      "name": "weekly-reliability-review",
+      "description": "Weekly read-only review of incidents, recurring causes, IaC drift, capacity and agent effectiveness.",
+      "tools": ["RunAzCliReadCommands", "QueryAppInsightsUsingAppId", "QueryLogAnalyticsByWorkspaceId", "SearchMemory"],
+      "file": "skills/weekly-reliability-review.md"
+    }
+  ],
+  "agents": [
+    {
+      "name": "l2-aca-remediator",
+      "file": "agents/l2-aca-remediator.md",
+      "handoffDescription": "Applies one approved Container Apps mitigation (revision restart, traffic rollback, scale, resize) for a named app and verifies it.",
+      "tools": ["RunAzCliReadCommands", "RunAzCliWriteCommands", "QueryAppInsightsUsingAppId", "QueryLogAnalyticsByWorkspaceId", "SearchMemory"],
+      "allowedSkills": ["container-app-remediation", "container-app-health-check"],
+      "guardPolicy": "l2-remediator"
+    },
+    {
+      "name": "l2-network-diagnostician",
+      "file": "agents/l2-network-diagnostician.md",
+      "handoffDescription": "Read-only diagnosis of connectivity problems: private endpoints, private DNS, routing, firewall, App Gateway.",
+      "tools": ["RunAzCliReadCommands", "QueryLogAnalyticsByWorkspaceId", "SearchMemory"],
+      "allowedSkills": ["spoke-network-diagnostics"],
+      "guardPolicy": "read-only"
+    },
+    {
+      "name": "l2-incident-commander",
+      "file": "agents/l2-incident-commander.md",
+      "handoffDescription": "L2 incident commander for Sev0-Sev1 and escalated Azure Monitor tickets; coordinates specialists and closes tickets.",
+      "tools": ["RunAzCliReadCommands", "RunAzCliWriteCommands", "QueryAppInsightsUsingAppId", "QueryLogAnalyticsByWorkspaceId", "SearchMemory"],
+      "allowedSkills": ["incident-command", "escalation-sweep", "container-app-health-check", "weekly-reliability-review"],
+      "handoffs": ["l2-aca-remediator", "l2-network-diagnostician"],
+      "guardPolicy": "l2-commander"
+    }
+  ],
+  "responsePlans": [
+    {
+      "name": "l2-sev0-to-sev1",
+      "priorities": ["Sev0", "Sev1"],
+      "handlingAgent": "l2-incident-commander",
+      "agentMode": "review",
+      "maxAutomatedInvestigationAttempts": 3
+    }
+  ],
+  "scheduledTasks": [
+    {
+      "name": "escalation-sweep",
+      "description": "Every 30 minutes: pick up tickets L1 escalated with [ESCALATE-L2].",
+      "cron": "*/30 * * * *",
+      "agent": "l2-incident-commander",
+      "mode": "Review",
+      "prompt": "Run the escalation-sweep skill. Accept and handle every pending [ESCALATE-L2] ticket; if none, reply with one line."
+    },
+    {
+      "name": "weekly-reliability-review",
+      "description": "Monday 09:00 UTC reliability review with the top 5 improvement actions.",
+      "cron": "0 9 * * 1",
+      "agent": "l2-incident-commander",
+      "mode": "Review",
+      "prompt": "Run the weekly-reliability-review skill for the last 7 days and post the top 5 actions."
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "lowmaint-mermaid-tools",
+  "private": true,
+  "type": "module",
+  "description": "Builds an Iconify icon pack from the official Azure Architecture Icons and renders Mermaid diagrams with it.",
+  "scripts": {
+    "build-icons": "node build-azure-iconpack.mjs",
+    "render": "node render.mjs"
+  },
+  "devDependencies": {
+    "@iconify/tools": "5.0.14",
+    "@mermaid-js/mermaid-cli": "12.0.0"
+  }
+}
